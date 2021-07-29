@@ -292,4 +292,4 @@ if __name__ == '__main__':
     )
     
     res = train_test(configs)
-    print(res[-1])
+    # print(res[-1])
