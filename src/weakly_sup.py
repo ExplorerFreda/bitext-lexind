@@ -136,7 +136,6 @@ def extract_probs(batch, pretrained_model, lexicon_inducer, info, configs):
         src_encodings = (src_encodings * src_attn_masks.unsqueeze(-1)).sum(1) / src_attn_masks.sum(-1).unsqueeze(-1)
         trg_encodings = (trg_encodings * trg_attn_masks.unsqueeze(-1)).sum(1) / trg_attn_masks.sum(-1).unsqueeze(-1)
         cos_sim = cos(src_encodings, trg_encodings).reshape(-1, 1)
-        dot_prod = (src_encodings * trg_encodings).sum(-1).reshape(-1, 1)
         features = torch.tensor(
             [
                 [
@@ -148,7 +147,7 @@ def extract_probs(batch, pretrained_model, lexicon_inducer, info, configs):
                 ] for x in subbatch
             ]
         ).float().to(configs.device).reshape(-1, 5)
-        features = torch.cat([cos_sim, dot_prod, features], dim=-1)
+        features = torch.cat([cos_sim, features], dim=-1)
         probs = lexicon_inducer(features).squeeze(-1)
         all_probs.append(probs)
     return torch.cat(all_probs, dim=0)
@@ -227,7 +226,7 @@ def train_test(configs, logging_steps=50000):
     # model and optimizers
     pretrained_tokenizer = AutoTokenizer.from_pretrained(configs.model_name)
     pretrained_model = AutoModel.from_pretrained(configs.model_name).to(configs.device)
-    lexicon_inducer = LexiconInducer(7, configs.hiddens, 1, 5).to(configs.device)
+    lexicon_inducer = LexiconInducer(6, configs.hiddens, 1, 5).to(configs.device)
     optimizer = torch.optim.Adam(lexicon_inducer.parameters(), lr=.0005)
     # train model
     for epoch in range(configs.epochs):
@@ -284,7 +283,7 @@ if __name__ == '__main__':
             'bitext_path': args.bitext,
             'save_path': args.output,
             'batch_size': 64,
-            'epochs': 1,
+            'epochs': 5,
             'device': args.device,
             'hiddens': [8],
             'model_name': args.model
